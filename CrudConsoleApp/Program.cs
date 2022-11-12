@@ -8,6 +8,7 @@ using CrudConsoleApp.Models;
 using CrudConsoleApp.Helpers;
 using CrudConsoleApp.Interfaces;
 using CrudConsoleApp.Controllers;
+using CrudConsoleApp.Other;
 
 namespace CrudConsoleApp
 {
@@ -244,7 +245,7 @@ namespace CrudConsoleApp
         {
             DisplayUsers();
             ConsoleHelper.DrawLine();
-            string[] options = { "Add", "Edit", "Remove", "Exit"};
+            string[] options = { "Add", "Edit", "Remove", "Binary Search", "Exit"};
             int input = SelectOptions("", options, false);
 
             switch (input)
@@ -260,7 +261,10 @@ namespace CrudConsoleApp
                     RemoveUserPrompt();
                     break;
                 case 4:
-                    return false; ;
+                    new BinarySearcher().Run(); ;
+                    break;
+                case 5:
+                    return false; 
                 default:
                     Console.WriteLine("Invalid input...");
                     break;
