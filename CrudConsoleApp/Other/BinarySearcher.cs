@@ -13,7 +13,7 @@ namespace CrudConsoleApp.Other
         {
             Console.Clear();
             List<int> currentList = RandomList(10);
-            
+
             currentList.Sort();
             DisplayList(currentList);
             
