@@ -165,9 +165,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controllers\UsersController.cs" />
     <Compile Include="Db\KunskapsProvDbContext.cs" />
     <Compile Include="Helpers\ConsoleHelper.cs" />
+    <Compile Include="Interfaces\IUser.cs" />
     <Compile Include="Models\User.cs" />
+    <Compile Include="Other\BinarySearcher.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

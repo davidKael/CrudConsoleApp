@@ -6,30 +6,24 @@ using System.Threading.Tasks;
 using CrudConsoleApp.Db;
 using CrudConsoleApp.Models;
 using CrudConsoleApp.Helpers;
+using CrudConsoleApp.Interfaces;
+using CrudConsoleApp.Controllers;
+using CrudConsoleApp.Other;
 
 namespace CrudConsoleApp
 {
-    class Program
+    class Program 
     {
+        static UsersController uc = new UsersController();
+
         static void Main(string[] args)
         {
+
             bool programRunning = true;
+
             while (programRunning)
             {
-                GetUsers();
                 programRunning = MenuSelection();
-            }
-
-        }
-
-
-        static void AddUser(User newUser)
-        {
-            using (var db = new KunskapsProvDbContext())
-            {
-
-                db.Add(newUser);
-                db.SaveChanges();
             }
 
         }
@@ -37,120 +31,153 @@ namespace CrudConsoleApp
         static void EditUserPrompt()
         {
 
-
-
-            using (var db = new KunskapsProvDbContext())
+            List<string> editableValues = new List<string>()
             {
-                List<string> editableValues = new List<string>()
-                {
-                    "FirstName",
-                    "LastName",
-                    "Email",
-                    "Address"
-                };
+                "First Name",
+                "Last Name",
+                "Email",
+                "Address"
+            };
 
+
+            string editingStep = "choose user";
+
+            User selectedUser = null;
+            int selectedAttribute = 0;
+
+            while (editingStep != "back to main menu")
+            {
                 
-                List<User> users = db.Users.ToList();
+                List<User> users = uc.Read();
+                List<string> UserInfos = new List<string>();
 
-
-
-                int selectedUser = 0;
-
-                while (selectedUser == 0)
+                foreach (User item in users)
                 {
-
-                    while (selectedUser == 0)
-                    {
-                        ConsoleHelper.DrawLine();
-                        Console.WriteLine("Select which user you would like to edit: ");
-                        List<string> UserInfos = new List<string>();
-
-                        foreach (User item in users)
-                        {
-
-                            UserInfos.Add($"ID: {item.Id} First Name: {item.FirstName} Last Name: {item.LastName} Email: {item.Email} Address: {item.Address} Registered At: {item.UserRegisteredAt}");
-                        }
-
-
-                        selectedUser = SelectOptions("Select which user you would like to edit: ", UserInfos.ToArray());
-
-                        if (selectedUser == users.Count + 1)
-                        {
-                            return;
-                        }
-
-                    }
-
-                    int selectedAttribute = 0;
-
-
-                    while (selectedAttribute == 0)
-                    {
-                        string[] valueOptions ={
-                            $"First Name: { users[selectedUser - 1].FirstName}",
-                            $"Last Name: { users[selectedUser - 1].LastName}",
-                            $"Email: { users[selectedUser - 1].Email}",
-                            $"Address: { users[selectedUser - 1].Address}"
-                         };
-
-                        selectedAttribute = SelectOptions("Select what you would like to edit: ", valueOptions);
-
-                    }
-
-                    if (selectedAttribute == 5)
-                    {
-                        selectedUser = 0;
-                    }
-                    else
-                    {
-                        Console.Write($"Enter new {editableValues[selectedAttribute - 1]}: ");
-                        string input = Console.ReadLine();
-
-                        switch (selectedAttribute)
-                        {
-                            case 1:
-                                db.Users.ToList()[selectedUser - 1].FirstName = input;
-                                break;
-                            case 2:
-                                db.Users.ToList()[selectedUser - 1].LastName = input;
-                                break;
-                            case 3:
-                                db.Users.ToList()[selectedUser - 1].Email = input;
-                                break;
-                            case 4:
-                                db.Users.ToList()[selectedUser - 1].Address = input;
-                                break;
-                            default:
-                                Console.WriteLine("I cant read.. sorry my fault...");
-                                Console.ReadKey();
-                                Console.Clear();
-                                return;
-                        }
-
-                        db.SaveChanges();
-                        Console.WriteLine($"{editableValues[selectedAttribute - 1]} edited on user with id {db.Users.ToList()[selectedUser - 1].Id}...");
-                        Console.ReadKey();
-                        Console.Clear();
-
-                    }
-
+                    UserInfos.Add($"ID: {item.Id} First Name: {item.FirstName} Last Name: {item.LastName} Email: {item.Email} Address: {item.Address} Registered At: {item.UserRegisteredAt}");
                 }
 
-              
 
+                switch (editingStep)
+                {
+                    case "choose user":
+
+                        selectedUser = null;
+
+                        while (selectedUser == null)
+                        {
+
+                            int choosenIndex = SelectOptions("Select which user you would like to edit: ", UserInfos.ToArray());
+
+                            if (choosenIndex == -1)
+                            {
+                                    
+                                editingStep = "back to main menu";
+                                break;
+                                    
+                            }
+                            else if(choosenIndex > 0)
+                            {
+                                selectedUser = users[choosenIndex -1];
+                                editingStep = "choose attribute";
+                            }
+
+                        }
+
+                        break;
+
+
+                    case "choose attribute":
+                        selectedAttribute = 0;
+                        while (selectedUser != null && selectedAttribute == 0)
+                        {
+                               
+                            string[] valueOptions ={
+                                $"First Name: { selectedUser.FirstName}",
+                                $"Last Name: { selectedUser.LastName}",
+                                $"Email: { selectedUser.Email}",
+                                $"Address: { selectedUser.Address}"
+                            };
+
+                            selectedAttribute = SelectOptions("Select what you would like to edit: ", valueOptions);
+
+                            if (selectedAttribute == -1)
+                            {
+                                editingStep = "choose user";
+                                selectedAttribute = 0;
+                                selectedUser = null;
+                            }
+                            else
+                            {
+                                editingStep = "edit attribute";
+                            }
+                        }
+
+                        break;
+
+
+                    case "edit attribute":
+
+                        Console.Write($"Enter new {editableValues[selectedAttribute - 1]}: ");
+                        string input = Console.ReadLine();
+                        if(uc.Update(selectedUser, editableValues[selectedAttribute-1], input))
+                        {
+
+                            Console.WriteLine($"{editableValues[selectedAttribute - 1]} edited on user with id {selectedUser.Id}...");
+       
+                            editingStep = "again";
+
+                        }
+
+                        else
+                        {
+                            Console.WriteLine($"Oh.. something went wrong here.. sorry 'bout that ;)");
+                        }
+
+                        break;
+
+                    case "again":
+
+                        int again = 0;
+                        while (again != 1  && again != 2)
+                        {
+                            Console.WriteLine("Any thing else you would like to edit?");
+                            again = SelectOptions("Any thing else you would like to edit?", new string[] { "Yes", "No" }, false);
+                        }
+                           
+                            
+                        editingStep = again == 1 ? "choose attribute" : "back to main menu";
+
+                        break;
+                    default :
+                    //huh?
+                        break;
+                            
+                }
 
             }
+            Console.Clear();
         }
 
-        static int SelectOptions(string selectionMessage, string[] options)
+        static int SelectOptions(string selectionMessage, string[] options, bool exitable = true)
         {
-            ConsoleHelper.DrawLine();
-            Console.WriteLine(selectionMessage);
+            if(selectionMessage != "")
+            {
+                ConsoleHelper.DrawLine();
+                Console.WriteLine(selectionMessage);
+            }
+
             for(int i = 0; i < options.Length; i++)
             {
                 Console.WriteLine($"{i+1}. {options[i]}");
             }
-            Console.WriteLine($"{options.Length +1}. Go Back");
+
+            if (exitable)
+            {
+                Console.WriteLine($"{options.Length + 1}. Go Back");
+            }
+
+            ConsoleHelper.DrawLine();
+            Console.Write("Select: ");
             string input = Console.ReadLine();
 
             if (int.TryParse(input, out int parsedInput))
@@ -159,65 +186,85 @@ namespace CrudConsoleApp
                 {
                     return parsedInput;
                 }
-                else if(parsedInput == options.Length +1)
+                else if(exitable && parsedInput == options.Length +1)
                 {
-                    return parsedInput;
+                    return -1;
                 }
-                else
-                {
-                    return 0;
-                }
+
                
             }
-            else
-            {
-                Console.WriteLine("Invalid input... has to be a number....");
-                Console.WriteLine("Press any key to submit");
-                Console.ReadKey();
-                Console.Clear();
 
-                return 0;
-            }
+            Console.WriteLine("Invalid input... ");
+
+            return 0;
+            
         }
 
         static void RemoveUserPrompt()
         {
-            ConsoleHelper.DrawLine();
-            Console.Write("Select (by id) which user you would like to remove: ");
 
-            string input = Console.ReadLine();
+            List<User> users = uc.Read();
+            List<string> UserInfos = new List<string>();
 
-            if(int.TryParse(input, out int parsedInput))
+            foreach (User item in users)
             {
-                DeleteUserById(parsedInput);
+                UserInfos.Add($"ID: {item.Id} First Name: {item.FirstName} Last Name: {item.LastName} Email: {item.Email} Address: {item.Address} Registered At: {item.UserRegisteredAt}");
             }
-            else
+
+
+            int input = 0;
+
+            while (input == 0)
             {
-                Console.WriteLine("Invalid input... has to be a number....");
-                Console.WriteLine("Press any key to submit");
-                Console.ReadKey();
-                Console.Clear();
+                input = SelectOptions("Select which user you would like to remove: ", UserInfos.ToArray());
+
+
+
+                if (input > 0 && input - 1 < UserInfos.Count)
+                {
+                    User userToDelete = users[input - 1];
+                        
+                    if (userToDelete == null)
+                    {
+                        Console.WriteLine("User not found...");
+                        Console.WriteLine("Press any key to continue");
+                        Console.ReadKey();
+                        Console.Clear();
+                        return;
+                    }
+
+                    uc.Delete(userToDelete);
+                }
+
             }
+              
+            Console.Clear();
         }
 
         static bool MenuSelection()
         {
+            DisplayUsers();
             ConsoleHelper.DrawLine();
-            Console.WriteLine("1.Add 2.Edit 3.Remove 4.Exit");
-            string input = Console.ReadLine();
+            string[] options = { "Add", "Edit", "Remove", "Binary Search", "Exit"};
+            int input = SelectOptions("", options, false);
+
             switch (input)
             {
-                case "1":
-                    AddUser(AddUserForm());
+                case 1:
+                    //AddUser(AddUserForm());
+                    uc.Create(AddUserForm());
                     break;
-                case "2":
+                case 2:
                     EditUserPrompt();
                     break;
-                case "3":
+                case 3:
                     RemoveUserPrompt();
                     break;
-                case "4":
-                    return false; ;
+                case 4:
+                    new BinarySearcher().Run(); ;
+                    break;
+                case 5:
+                    return false; 
                 default:
                     Console.WriteLine("Invalid input...");
                     break;
@@ -226,60 +273,16 @@ namespace CrudConsoleApp
             return true;
         }
 
-        static void GetUsers()
+        static void DisplayUsers()
         {
-            using (var db = new KunskapsProvDbContext())
+            
+            ConsoleHelper.DrawLine();
+
+            foreach (User u in uc.Read())
             {
-                List<User> users = db.Users.ToList();
-                foreach (User u in users)
-                {
-                    Console.WriteLine($"{u.Id}, {u.FirstName}, {u.LastName}, {u.Email}, {u.Address}, {u.UserRegisteredAt}");
-                }
+                Console.WriteLine($"{u.Id}, {u.FirstName}, {u.LastName}, {u.Email}, {u.Address}, {u.UserRegisteredAt}");
             }
-            return;
-        }
-
-        static void DeleteUserById(int id)
-        {
-            using (var db = new KunskapsProvDbContext())
-            {
-
-                User userToRemove = db.Users.Find(id);
-
-                if(userToRemove == null)
-                {
-                    Console.WriteLine("User not found...");
-                    Console.WriteLine("Press any key to continue");
-                    Console.ReadKey();
-                    Console.Clear();
-                    return;
-                }
-
-                db.Remove(userToRemove);
-                db.SaveChanges();
-            }
-            return;
-        }
-
-        static void EditUserById(int id)
-        {
-            using (var db = new KunskapsProvDbContext())
-            {
-
-                User userToRemove = db.Users.Find(id);
-
-                if (userToRemove == null)
-                {
-                    Console.WriteLine("User not found...");
-                    Console.WriteLine("Press any key to continue");
-                    Console.ReadKey();
-                    Console.Clear();
-                    return;
-                }
-                db.Remove(userToRemove);
-                db.SaveChanges();
-            }
-            return;
+            
         }
 
         static User AddUserForm()
@@ -300,5 +303,7 @@ namespace CrudConsoleApp
             Console.Clear();
             return new User(firstName, lastName, email, address);
         }
+
+
     }
 }
