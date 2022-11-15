@@ -47,115 +47,128 @@ namespace CrudConsoleApp
 
             while (editingStep != "back to main menu")
             {
-                
-                List<User> users = uc.Read();
-                List<string> UserInfos = new List<string>();
-
-                foreach (User item in users)
+                if(uc.Read(out List<User> users))
                 {
-                    UserInfos.Add($"ID: {item.Id} First Name: {item.FirstName} Last Name: {item.LastName} Email: {item.Email} Address: {item.Address} Registered At: {item.UserRegisteredAt}");
-                }
+
+                    List<string> UserInfos = new List<string>();
+
+                    foreach (User item in users)
+                    {
+                        UserInfos.Add($"ID: {item.Id} First Name: {item.FirstName} Last Name: {item.LastName} Email: {item.Email} Address: {item.Address} Registered At: {item.UserRegisteredAt}");
+                    }
 
 
-                switch (editingStep)
-                {
-                    case "choose user":
+                    switch (editingStep)
+                    {
+                        case "choose user":
 
-                        selectedUser = null;
+                            selectedUser = null;
 
-                        while (selectedUser == null)
-                        {
-
-                            int choosenIndex = SelectOptions("Select which user you would like to edit: ", UserInfos.ToArray());
-
-                            if (choosenIndex == -1)
+                            while (selectedUser == null)
                             {
-                                    
-                                editingStep = "back to main menu";
-                                break;
-                                    
+
+                                int choosenIndex = SelectOptions("Select which user you would like to edit: ", UserInfos.ToArray());
+
+                                if (choosenIndex == -1)
+                                {
+
+                                    editingStep = "back to main menu";
+                                    break;
+
+                                }
+                                else if (choosenIndex > 0)
+                                {
+                                    selectedUser = users[choosenIndex - 1];
+                                    editingStep = "choose attribute";
+                                }
+
                             }
-                            else if(choosenIndex > 0)
+
+                            break;
+
+
+                        case "choose attribute":
+                            selectedAttribute = 0;
+                            while (selectedUser != null && selectedAttribute == 0)
                             {
-                                selectedUser = users[choosenIndex -1];
-                                editingStep = "choose attribute";
-                            }
 
-                        }
-
-                        break;
-
-
-                    case "choose attribute":
-                        selectedAttribute = 0;
-                        while (selectedUser != null && selectedAttribute == 0)
-                        {
-                               
-                            string[] valueOptions ={
+                                string[] valueOptions ={
                                 $"First Name: { selectedUser.FirstName}",
                                 $"Last Name: { selectedUser.LastName}",
                                 $"Email: { selectedUser.Email}",
                                 $"Address: { selectedUser.Address}"
                             };
 
-                            selectedAttribute = SelectOptions("Select what you would like to edit: ", valueOptions);
+                                selectedAttribute = SelectOptions("Select what you would like to edit: ", valueOptions);
 
-                            if (selectedAttribute == -1)
-                            {
-                                editingStep = "choose user";
-                                selectedAttribute = 0;
-                                selectedUser = null;
+                                if (selectedAttribute == -1)
+                                {
+                                    editingStep = "choose user";
+                                    selectedAttribute = 0;
+                                    selectedUser = null;
+                                }
+                                else
+                                {
+                                    editingStep = "edit attribute";
+                                }
                             }
+
+                            break;
+
+
+                        case "edit attribute":
+
+                            Console.Write($"Enter new {editableValues[selectedAttribute - 1]}: ");
+                            string input = Console.ReadLine();
+                            if (uc.Update(ref selectedUser, editableValues[selectedAttribute - 1], ref input))
+                            {
+
+                                Console.WriteLine($"{editableValues[selectedAttribute - 1]} edited on user with id {selectedUser.Id}...");
+
+                                editingStep = "again";
+
+                            }
+
                             else
                             {
-                                editingStep = "edit attribute";
+                                Console.WriteLine($"Oh.. something went wrong here.. sorry 'bout that ;)");
                             }
-                        }
 
-                        break;
+                            break;
+
+                        case "again":
+
+                            int again = 0;
+                            while (again != 1 && again != 2)
+                            {
+                                Console.WriteLine("Any thing else you would like to edit?");
+                                again = SelectOptions("Any thing else you would like to edit?", new string[] { "Yes", "No" }, false);
+                            }
 
 
-                    case "edit attribute":
+                            editingStep = again == 1 ? "choose attribute" : "back to main menu";
 
-                        Console.Write($"Enter new {editableValues[selectedAttribute - 1]}: ");
-                        string input = Console.ReadLine();
-                        if(uc.Update(selectedUser, editableValues[selectedAttribute-1], input))
-                        {
+                            break;
+                        default:
+                            //huh?
+                            break;
 
-                            Console.WriteLine($"{editableValues[selectedAttribute - 1]} edited on user with id {selectedUser.Id}...");
-       
-                            editingStep = "again";
+                    }
+                    
 
-                        }
-
-                        else
-                        {
-                            Console.WriteLine($"Oh.. something went wrong here.. sorry 'bout that ;)");
-                        }
-
-                        break;
-
-                    case "again":
-
-                        int again = 0;
-                        while (again != 1  && again != 2)
-                        {
-                            Console.WriteLine("Any thing else you would like to edit?");
-                            again = SelectOptions("Any thing else you would like to edit?", new string[] { "Yes", "No" }, false);
-                        }
-                           
-                            
-                        editingStep = again == 1 ? "choose attribute" : "back to main menu";
-
-                        break;
-                    default :
-                    //huh?
-                        break;
-                            
                 }
+                else
+                {
+                    Console.Clear();
+                    Console.WriteLine("No users found..");
+                    return;
+                }
+                
+              
 
             }
             Console.Clear();
+
         }
 
         static int SelectOptions(string selectionMessage, string[] options, bool exitable = true)
@@ -202,43 +215,50 @@ namespace CrudConsoleApp
 
         static void RemoveUserPrompt()
         {
-
-            List<User> users = uc.Read();
-            List<string> UserInfos = new List<string>();
-
-            foreach (User item in users)
+            if(uc.Read(out List<User> users))
             {
-                UserInfos.Add($"ID: {item.Id} First Name: {item.FirstName} Last Name: {item.LastName} Email: {item.Email} Address: {item.Address} Registered At: {item.UserRegisteredAt}");
-            }
+                List<string> UserInfos = new List<string>();
 
-
-            int input = 0;
-
-            while (input == 0)
-            {
-                input = SelectOptions("Select which user you would like to remove: ", UserInfos.ToArray());
-
-
-
-                if (input > 0 && input - 1 < UserInfos.Count)
+                foreach (User item in users)
                 {
-                    User userToDelete = users[input - 1];
-                        
-                    if (userToDelete == null)
-                    {
-                        Console.WriteLine("User not found...");
-                        Console.WriteLine("Press any key to continue");
-                        Console.ReadKey();
-                        Console.Clear();
-                        return;
-                    }
-
-                    uc.Delete(userToDelete);
+                    UserInfos.Add($"ID: {item.Id} First Name: {item.FirstName} Last Name: {item.LastName} Email: {item.Email} Address: {item.Address} Registered At: {item.UserRegisteredAt}");
                 }
 
+
+                int input = 0;
+
+                while (input == 0)
+                {
+                    input = SelectOptions("Select which user you would like to remove: ", UserInfos.ToArray());
+
+
+
+                    if (input > 0 && input - 1 < UserInfos.Count)
+                    {
+                        User userToDelete = users[input - 1];
+
+                        if (userToDelete == null)
+                        {
+                            Console.WriteLine("User not found...");
+                            Console.WriteLine("Press any key to continue");
+                            Console.ReadKey();
+                            Console.Clear();
+                            return;
+                        }
+
+                        uc.Delete(ref userToDelete);
+                    }
+
+                }
+                Console.Clear();
+            }
+            else
+            {
+                Console.Clear();
+                Console.WriteLine("No user´s found..");
             }
               
-            Console.Clear();
+            
         }
 
         static bool MenuSelection()
@@ -251,8 +271,9 @@ namespace CrudConsoleApp
             switch (input)
             {
                 case 1:
-                    //AddUser(AddUserForm());
-                    uc.Create(AddUserForm());
+                    
+                    var newUser = AddUserForm();
+                    uc.Create(ref newUser);
                     break;
                 case 2:
                     EditUserPrompt();
@@ -278,9 +299,18 @@ namespace CrudConsoleApp
             
             ConsoleHelper.DrawLine();
 
-            foreach (User u in uc.Read())
+            if(uc.Read(out List<User> users))
             {
-                Console.WriteLine($"{u.Id}, {u.FirstName}, {u.LastName}, {u.Email}, {u.Address}, {u.UserRegisteredAt}");
+
+                foreach (User u in users)
+                {
+                    Console.WriteLine($"{u.Id}, {u.FirstName}, {u.LastName}, {u.Email}, {u.Address}, {u.UserRegisteredAt}");
+                }
+
+            }
+            else
+            {
+                Console.WriteLine("No user´s found..");
             }
             
         }
